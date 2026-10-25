@@ -20,9 +20,28 @@
       <option value="labeled">Nur fertig</option>
     </select>
     <button id="akzeptieren" class="haupt">Vorschlag übernehmen (Leertaste)</button>
+    <button id="rueckgaengig">Rückgängig (Strg+Z)</button>
     <button id="neu">Liste neu laden (R)</button>
   </div>
+  <div class="zeile formzeile">
+    <label for="importpfad">Bilder importieren</label>
+    <input id="importpfad" type="text" placeholder="/pfad/zum/bildordner" size="34">
+    <label class="haken"><input id="rekursiv" type="checkbox"> Unterordner</label>
+    <label class="haken"><input id="mitlabels" type="checkbox"> vorhandene Labels</label>
+    <button id="importieren">Importieren</button>
+    <span class="trenner"></span>
+    <label for="exportpfad">Datensatz schreiben</label>
+    <input id="exportpfad" type="text" placeholder="./datensatz" size="20">
+    <select id="exportformat">
+      <option value="both">YOLO und COCO</option>
+      <option value="coco">nur COCO</option>
+      <option value="yolo">nur YOLO</option>
+    </select>
+    <label class="haken"><input id="exportforce" type="checkbox"> überschreiben</label>
+    <button id="exportieren">Exportieren</button>
+  </div>
   <div id="banner" class="banner leer"></div>
+  <div id="toast" class="toast leer"></div>
   <div class="klassen" id="klassen"></div>
 </header>
 
@@ -41,8 +60,9 @@
   <span>Klick: Box wählen</span>
   <span>Ziehen in Box: verschieben</span>
   <span>Ecke ziehen: Größe</span>
-  <span>1–9: Klasse</span>
   <span>Entf: Box löschen</span>
+  <span>Strg+Z: rückgängig</span>
+  <span>1–9: Klasse</span>
   <span>A / D: voriges / nächstes Bild</span>
   <span>Leertaste: Vorschläge übernehmen</span>
 </footer>

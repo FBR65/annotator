@@ -19,6 +19,7 @@ class ImportResult:
     added: int
     duplicates: int
     skipped: int
+    unreadable: int = 0
 
 
 @dataclass(frozen=True)
@@ -69,10 +70,12 @@ def import_folder(store: Store, root: Path, recursive: bool = False) -> ImportRe
     images, skipped = _scan(root, recursive)
     added = 0
     duplicates = 0
+    unreadable = 0
     for path in images:
         size = _size(path)
         if size is None:
             skipped += 1
+            unreadable += 1
             continue
         width, height = size
         new_id = store.add_image(str(path.resolve()), sha256_file(path), width, height)
@@ -80,7 +83,7 @@ def import_folder(store: Store, root: Path, recursive: bool = False) -> ImportRe
             duplicates += 1
         else:
             added += 1
-    return ImportResult(added=added, duplicates=duplicates, skipped=skipped)
+    return ImportResult(added=added, duplicates=duplicates, skipped=skipped, unreadable=unreadable)
 
 
 def read_label_file(path: Path, n_classes: int) -> list[Box]:

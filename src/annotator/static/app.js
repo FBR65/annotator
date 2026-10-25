@@ -22,6 +22,24 @@ const STATUS_TEXT = {
   labeled: "fertig",
 };
 
+// Rückgängig: nur Änderungen dieser Sitzung.
+const verlauf = [];
+
+function merke(eintrag) {
+  verlauf.push(eintrag);
+  if (verlauf.length > 100) verlauf.shift();
+}
+
+let toastZeit = null;
+function zeigeToast(text, fehler = false) {
+  const kasten = el("toast");
+  kasten.textContent = text;
+  kasten.classList.remove("leer");
+  kasten.classList.toggle("fehler", fehler);
+  if (toastZeit) clearTimeout(toastZeit);
+  toastZeit = setTimeout(() => kasten.classList.add("leer"), 6000);
+}
+
 async function anfrage(pfad, optionen = {}) {
   const antwort = await fetch(pfad, {
     headers: { "Content-Type": "application/json" },
@@ -65,6 +83,7 @@ function klasseWaehlen(id) {
   if (zustand.gewaehlt !== null) {
     const box = zustand.boxes.find((eintrag) => eintrag.id === zustand.gewaehlt);
     if (box && box.class_id !== id) {
+      merke({ art: "patch", id: box.id, vorher: { ...box } });
       anfrage(`/api/boxes/${box.id}`, {
         method: "PATCH",
         body: JSON.stringify({ class_id: id }),
@@ -331,12 +350,24 @@ buehne.addEventListener("mouseup", async () => {
     });
     zustand.boxes.push(angelegt);
     zustand.gewaehlt = angelegt.id;
+    merke({ art: "create", id: angelegt.id });
     zeichne();
     await ladeListe();
     return;
   }
   const geaendert = zustand.boxes.find((eintrag) => eintrag.id === zug.box.id);
   if (!geaendert) return;
+  const unveraendert =
+    geaendert.cx === zug.box.cx &&
+    geaendert.cy === zug.box.cy &&
+    geaendert.w === zug.box.w &&
+    geaendert.h === zug.box.h;
+  if (unveraendert) return;
+  merke({
+    art: "patch",
+    id: geaendert.id,
+    vorher: { cx: zug.box.cx, cy: zug.box.cy, w: zug.box.w, h: zug.box.h, class_id: zug.box.class_id },
+  });
   await anfrage(`/api/boxes/${geaendert.id}`, {
     method: "PATCH",
     body: JSON.stringify({ cx: geaendert.cx, cy: geaendert.cy, w: geaendert.w, h: geaendert.h }),
@@ -356,11 +387,18 @@ document.addEventListener("keydown", async (ereignis) => {
   if (taste === "Entf" || taste === "Delete") {
     if (zustand.gewaehlt === null) return;
     ereignis.preventDefault();
+    const box = zustand.boxes.find((eintrag) => eintrag.id === zustand.gewaehlt);
+    if (box) merke({ art: "delete", id: box.id, box: { ...box } });
     await anfrage(`/api/boxes/${zustand.gewaehlt}`, { method: "DELETE" });
-    zustand.boxes = zustand.boxes.filter((box) => box.id !== zustand.gewaehlt);
+    zustand.boxes = zustand.boxes.filter((eintrag) => eintrag.id !== zustand.gewaehlt);
     zustand.gewaehlt = null;
     zeichne();
     await ladeListe();
+    return;
+  }
+  if ((ereignis.ctrlKey || ereignis.metaKey) && (taste === "z" || taste === "Z")) {
+    ereignis.preventDefault();
+    await rueckgaengigMachen();
     return;
   }
   if (taste === " " || taste === "Leertaste") {
@@ -394,9 +432,107 @@ async function akzeptieren() {
   await ladeListe();
 }
 
+async function rueckgaengigMachen() {
+  const eintrag = verlauf.pop();
+  if (!eintrag) {
+    zeigeToast("Nichts rückgängig zu machen.");
+    return;
+  }
+  try {
+    if (eintrag.art === "create") {
+      await anfrage(`/api/boxes/${eintrag.id}`, { method: "DELETE" });
+      zustand.boxes = zustand.boxes.filter((box) => box.id !== eintrag.id);
+      zustand.gewaehlt = null;
+    } else if (eintrag.art === "patch") {
+      const werte = {
+        cx: eintrag.vorher.cx,
+        cy: eintrag.vorher.cy,
+        w: eintrag.vorher.w,
+        h: eintrag.vorher.h,
+        class_id: eintrag.vorher.class_id,
+      };
+      await anfrage(`/api/boxes/${eintrag.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(werte),
+      });
+      zustand.boxes = zustand.boxes.map((box) =>
+        box.id === eintrag.id ? { ...box, ...werte } : box,
+      );
+    } else if (eintrag.art === "delete") {
+      const angelegt = await anfrage(`/api/images/${zustand.aktuell}/boxes`, {
+        method: "POST",
+        body: JSON.stringify({
+          class_id: eintrag.box.class_id,
+          cx: eintrag.box.cx,
+          cy: eintrag.box.cy,
+          w: eintrag.box.w,
+          h: eintrag.box.h,
+        }),
+      });
+      zustand.boxes.push(angelegt);
+      zustand.gewaehlt = angelegt.id;
+    }
+    zeichne();
+    await ladeListe();
+    zeigeToast("Rückgängig gemacht.");
+  } catch (fehler) {
+    zeigeToast(`Rückgängig fehlgeschlagen: ${fehler.message}`, true);
+  }
+}
+
+async function importieren() {
+  const ordner = el("importpfad").value.trim();
+  if (!ordner) {
+    zeigeToast("Bitte einen Ordner angeben.", true);
+    return;
+  }
+  try {
+    const daten = await anfrage("/api/import", {
+      method: "POST",
+      body: JSON.stringify({
+        folder: ordner,
+        recursive: el("rekursiv").checked,
+        labels: el("mitlabels").checked,
+      }),
+    });
+    const labelTeil = daten.labels
+      ? `, ${daten.labels.boxes} Labels aus ${daten.labels.files} Dateien`
+      : "";
+    zeigeToast(
+      `${daten.added} Bild(er) importiert, ${daten.duplicates} Duplikate, ` +
+        `${daten.skipped} übersprungen${labelTeil}.`,
+    );
+    await ladeListe();
+  } catch (fehler) {
+    zeigeToast(`Import fehlgeschlagen: ${fehler.message}`, true);
+  }
+}
+
+async function exportieren() {
+  const ziel = el("exportpfad").value.trim() || "./datensatz";
+  try {
+    const daten = await anfrage("/api/export", {
+      method: "POST",
+      body: JSON.stringify({
+        out: ziel,
+        format: el("exportformat").value,
+        force: el("exportforce").checked,
+      }),
+    });
+    zeigeToast(
+      `Export fertig: ${daten.train} Bilder Training, ${daten.val} Bilder Prüfung → ${daten.out_dir}`,
+    );
+  } catch (fehler) {
+    zeigeToast(`Export fehlgeschlagen: ${fehler.message}`, true);
+  }
+}
+
 el("filter").addEventListener("change", ladeListe);
 el("neu").addEventListener("click", ladeListe);
 el("akzeptieren").addEventListener("click", akzeptieren);
+el("rueckgaengig").addEventListener("click", rueckgaengigMachen);
+el("importieren").addEventListener("click", importieren);
+el("exportieren").addEventListener("click", exportieren);
 window.addEventListener("resize", zeichne);
 
 (async function start() {

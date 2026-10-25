@@ -20,6 +20,7 @@ class AutoResult:
     accepted: int
     review: int
     reasons: dict[str, int]
+    failed: int = 0
 
 
 Predictor = Callable[[str], list[Detection]]
@@ -44,11 +45,37 @@ def run_auto(
     log_file = Path(log_path) if log_path is not None else Path("annotator.log")
     reasons: Counter[str] = Counter()
     queue: list[dict[str, object]] = []
-    processed = accepted = review = 0
+    processed = accepted = review = failed = 0
 
     for image in store.images("new"):
         processed += 1
-        detections = predictor(image.path)
+        try:
+            detections = predictor(image.path)
+        except KeyboardInterrupt:
+            raise
+        except Exception as exc:  # Modellfehler: Bild zur Prüfung, Lauf fortsetzen
+            failed += 1
+            reasons["fehler"] += 1
+            store.set_status(image.id, "needs_review", by="auto")
+            queue.append(
+                {
+                    "image_id": image.id,
+                    "path": image.path,
+                    "reason": "fehler",
+                    "text": f"Fehler bei der Vorannotation: {exc}",
+                    "boxes": 0,
+                }
+            )
+            _append_log(
+                log_file,
+                {
+                    "event": "auto_error",
+                    "image_id": image.id,
+                    "path": image.path,
+                    "error": str(exc),
+                },
+            )
+            continue
         decision = decide(detections, settings)
         with store.transaction():
             for detection in detections:
@@ -111,4 +138,5 @@ def run_auto(
         accepted=accepted,
         review=review,
         reasons=dict(reasons),
+        failed=failed,
     )

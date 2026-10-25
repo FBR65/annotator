@@ -174,3 +174,47 @@ Demo-Datensatz: `tools/make_demo.py`, `tools/annotate_demo.py`,
 
 Der Baum-Hash ist der belastbare Anker: er ändert sich bei jeder Änderung an
 Quell-, Test- oder Werkzeugdateien, auch wenn nur formatiert wird.
+
+---
+
+## 9. Nachtrag 26.10.2026 — README, vier SPEC-Lücken
+
+Anlass: Die README war 17 Zeilen dünn. Beim Schreiben des Bedienteils fielen vier
+Punkte auf, an denen der Code die freigegebene SPEC **nicht** erfüllte. Alle vier
+sind geschlossen, jeweils mit Test.
+
+| Lücke | SPEC-Stelle | Behebung | Test |
+|---|---|---|---|
+| „Bilder importieren“ in der Oberfläche fehlte | Abschnitt 6 | `POST /api/import` + Formular im Kopf der Seite | `test_api_ui_ops.py::test_import_endpoint_adds_images`, im Browser geprüft |
+| „Export“ als Knopf fehlte | Abschnitt 6 | `POST /api/export` + Formular mit Format und „überschreiben“ | `test_export_endpoint_writes_dataset`, `test_export_endpoint_needs_force` |
+| `Strg+Z` (Rückgängig) fehlte ganz | Abschnitt 6 | Verlauf im Browser, 100 Schritte, je Sitzung | im Browser geprüft: Box zeichnen → 1 Box, `Strg+Z` → 0 Boxen, Toast „Rückgängig gemacht.“ |
+| Exit-Code 3 wurde nie geliefert | Abschnitt 7 | `import` mit unlesbaren Bilddateien → 3; `auto` mit Bildern, die das Modell nicht verarbeitet → 3, Lauf läuft weiter, Bild geht zur Prüfung | `test_exit_codes.py` (4 Tests) |
+
+Realer Nachweis für Exit-Code 3:
+
+```
+$ annotator --db /tmp/p3/p.db import /tmp/p3
+Import abgeschlossen: 1 Bild(er) importiert, 0 Duplikate, 4 übersprungen.
+Warnung: 1 Datei(en) mit Bildendung waren unlesbar und wurden nicht übernommen.
+$ echo $?
+3
+```
+
+Zusätzlich korrigiert: Die SPEC nennt für die Speicherung „500 ms entprellt“.
+Der Code speichert sofort. Die README beschreibt jetzt das tatsächliche Verhalten;
+die SPEC-Angabe ist damit überholt und nicht umgesetzt.
+
+### Neue Zahlen (überholen Abschnitt 3)
+
+| Ebene | Ergebnis |
+|---|---|
+| Tests | **112 passed**, 1 deselected (vorher 104) |
+| GPU-Test | 1 passed in 6,22 s |
+| Reihenfolge-Zufall | 5/5 grün |
+| mypy strict / ruff / format | 0 Fehler / sauber / 34 Dateien formatiert |
+| Abdeckung | **90 %** (95 von 1000 Zeilen offen), `cli.py` 83 % (vorher 72 %), `api.py` 92 % |
+| Mutation | **7/7 getötet** |
+| Oberfläche | Import, Zeichnen, `Strg+Z`, Übernehmen, Export im Browser durchgespielt; Screenshot geprüft |
+
+Unverändert offen: `__main__.py` (5 Zeilen, kein Test), der echte ultralytics-Aufruf
+außerhalb des `slow`-Tests, `app.js` ohne automatisierten Test.

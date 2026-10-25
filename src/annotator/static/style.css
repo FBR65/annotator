@@ -65,3 +65,17 @@ select { background: var(--panel); color: var(--text); border: 1px solid var(--l
 .klasse { display: flex; align-items: center; gap: 6px; border-radius: 20px; padding: 3px 10px; font-size: 12px; border: 1px solid var(--line); cursor: pointer; }
 .klasse.gewaehlt { border-color: var(--accent); color: var(--accent); }
 .farbe { width: 10px; height: 10px; border-radius: 50%; }
+
+.formzeile { margin-top: 6px; font-size: 12px; }
+.formzeile input[type="text"] {
+  background: var(--panel); color: var(--text); border: 1px solid var(--line);
+  border-radius: 6px; padding: 4px 8px; font-size: 12px;
+}
+.haken { display: flex; align-items: center; gap: 4px; }
+.trenner { width: 1px; height: 18px; background: var(--line); }
+.toast {
+  margin-top: 6px; padding: 6px 10px; border-radius: 6px; font-size: 13px;
+  border: 1px solid var(--ok); color: var(--ok); background: #10251a;
+}
+.toast.fehler { border-color: var(--bad); color: var(--bad); background: #2a1214; }
+.toast.leer { display: none; }

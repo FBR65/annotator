@@ -12,7 +12,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .db import BoxRow, ImageRow, Store
+from .exporter import export_dataset
 from .geometry import Box, BoxError
+from .importer import import_folder, import_labels
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -36,6 +38,20 @@ class BoxPatch(BaseModel):
 class ClassIn(BaseModel):
     name: str
     color: str = "#ff0000"
+
+
+class ImportIn(BaseModel):
+    folder: str
+    recursive: bool = False
+    labels: bool = False
+
+
+class ExportIn(BaseModel):
+    out: str
+    format: str = "coco"
+    val_fraction: float = 0.2
+    seed: int = 42
+    force: bool = False
 
 
 def _box_dict(row: BoxRow) -> dict[str, object]:
@@ -174,6 +190,71 @@ def create_app(store: Store, log_path: Path) -> FastAPI:
             "status": store.image(image_id).status,
             "boxes": len(store.boxes(image_id)),
             "path": image.path,
+        }
+
+    @app.post("/api/import")
+    def import_images(payload: ImportIn) -> dict[str, object]:
+        ordner = Path(payload.folder).expanduser()
+        if not ordner.is_dir():
+            raise HTTPException(status_code=400, detail=f"Ordner nicht gefunden: {ordner}")
+        try:
+            result = import_folder(store, ordner, recursive=payload.recursive)
+            labels = (
+                import_labels(store, ordner, recursive=payload.recursive)
+                if payload.labels
+                else None
+            )
+        except (OSError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=f"Import fehlgeschlagen: {exc}") from exc
+        log(
+            "import",
+            None,
+            folder=str(ordner),
+            added=result.added,
+            duplicates=result.duplicates,
+            skipped=result.skipped,
+        )
+        return {
+            "added": result.added,
+            "duplicates": result.duplicates,
+            "skipped": result.skipped,
+            "unreadable": result.unreadable,
+            "labels": None
+            if labels is None
+            else {"boxes": labels.boxes, "files": labels.files, "rejected": labels.rejected},
+        }
+
+    @app.post("/api/export")
+    def export(payload: ExportIn) -> dict[str, object]:
+        ziel = Path(payload.out).expanduser()
+        try:
+            result = export_dataset(
+                store,
+                ziel,
+                fmt=payload.format,
+                val_fraction=payload.val_fraction,
+                seed=payload.seed,
+                force=payload.force,
+            )
+        except FileExistsError as exc:
+            raise HTTPException(
+                status_code=400, detail=str(exc.args[0] if exc.args else exc)
+            ) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        log(
+            "export",
+            None,
+            out=str(result.out_dir),
+            train=result.train,
+            val=result.val,
+            format=payload.format,
+        )
+        return {
+            "out_dir": str(result.out_dir),
+            "train": result.train,
+            "val": result.val,
+            "files": result.files,
         }
 
     @app.get("/api/summary")

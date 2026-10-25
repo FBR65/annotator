@@ -121,6 +121,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 f"Import abgeschlossen: {import_result.added} Bild(er) importiert, "
                 f"{import_result.duplicates} Duplikate, {import_result.skipped} übersprungen."
             )
+            if import_result.unreadable:
+                print(
+                    f"Warnung: {import_result.unreadable} Datei(en) mit Bildendung waren "
+                    "unlesbar und wurden nicht übernommen."
+                )
             if args.labels:
                 label_result = import_labels(store, Path(args.folder), recursive=args.recursive)
                 print(
@@ -129,7 +134,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
         finally:
             store.close()
-        return 0
+        return 3 if import_result.unreadable else 0
 
     if args.command == "serve":
         if args.host not in LOOPBACK:
@@ -192,9 +197,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             if auto_result.review:
                 print(f"Warteschlange geschrieben: {cwd / 'review_queue.json'}")
                 print("Bitte diese Bilder im Browser prüfen: annotator serve")
+            if auto_result.failed:
+                print(
+                    f"Warnung: {auto_result.failed} Bild(er) konnten nicht vorannotiert werden "
+                    "und stehen zur Prüfung."
+                )
         finally:
             store.close()
-        return 0
+        return 3 if auto_result.failed else 0
 
     if args.command == "train":
         cwd = Path(args.cwd)
