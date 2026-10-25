@@ -82,7 +82,12 @@ Reihenfolge der Prüfungen, erste Übereinstimmung gewinnt:
 | 2 | irgendeine Box mit `conf < conf_review` | `review` | „Erkennung unsicher (conf < 0.25)“ |
 | 3 | zwei Boxen gleicher Klasse mit IoU ≥ 0.70 | `review` | „Doppelte Erkennung, Klasse nicht eindeutig“ |
 | 4 | mehr als `max_boxes` Boxen | `review` | „Zu viele Objekte, Modell überfordert“ |
-| 5 | alle Boxen `conf ≥ conf_accept`, keine Regel 2–4 | `accept` | — |
+| 5 | irgendeine Box mit `conf < conf_accept` | `review` | „Grenzfall (conf zwischen 0.25 und 0.50)“ |
+| 6 | alle Boxen `conf ≥ conf_accept`, keine Regel 2–5 | `accept` | — |
+
+Revision 2 (nach Freigabe, sichtbar): Regel 5 war in Revision 1 nicht enthalten,
+obwohl Kriterium C2 (`conf=0.49` → `review`) sie verlangt. Ohne Regel 5 wäre die
+SPEC widersprüchlich gewesen.
 
 Alle Schwellen sind CLI-Parameter und stehen im Run-Datensatz.
 
@@ -168,7 +173,7 @@ Exit-Codes: `0` Erfolg, `1` Fehler, `2` nichts zu tun, `3` teilweise fehlgeschla
 
 ### C. Entscheidungslogik (reine Funktion)
 - **C1** leere Erkennungsliste → `review`, Grund `kein_objekt`.
-- **C2** eine Box `conf=0.49` → `review` (Band), eine Box `conf=0.50` → `accept`.
+- **C2** eine Box `conf=0.49` → `review`, Grund `grenzfall`; eine Box `conf=0.50` → `accept`.
 - **C3** zwei Boxen gleicher Klasse, IoU 0.8 → `review`, Grund `doppelt`.
   IoU 0.6 → `accept`.
 - **C4** 51 Boxen → `review`, Grund `zu_viele`.

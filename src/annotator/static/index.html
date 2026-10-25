@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Annotator</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <h1>Bildannotator</h1>
+  <div class="zeile">
+    <span id="zaehlung">Bestand: –</span>
+    <label for="filter">Ansicht</label>
+    <select id="filter">
+      <option value="">Alle Bilder</option>
+      <option value="needs_review">Nur Prüfung</option>
+      <option value="new">Nur neu</option>
+      <option value="auto_ok">Nur Vorschläge</option>
+      <option value="labeled">Nur fertig</option>
+    </select>
+    <button id="akzeptieren" class="haupt">Vorschlag übernehmen (Leertaste)</button>
+    <button id="neu">Liste neu laden (R)</button>
+  </div>
+  <div id="banner" class="banner leer"></div>
+  <div class="klassen" id="klassen"></div>
+</header>
+
+<aside>
+  <h2>Bilder</h2>
+  <div id="liste"></div>
+</aside>
+
+<main>
+  <div class="hinweis-leer" id="leer">Kein Bild gewählt. Links ein Bild anklicken.</div>
+  <canvas id="buehne" width="10" height="10" hidden></canvas>
+</main>
+
+<footer>
+  <span>Ziehen: neue Box</span>
+  <span>Klick: Box wählen</span>
+  <span>Ziehen in Box: verschieben</span>
+  <span>Ecke ziehen: Größe</span>
+  <span>1–9: Klasse</span>
+  <span>Entf: Box löschen</span>
+  <span>A / D: voriges / nächstes Bild</span>
+  <span>Leertaste: Vorschläge übernehmen</span>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>

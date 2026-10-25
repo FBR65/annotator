@@ -49,6 +49,7 @@ packages = ["src/annotator"]
 testpaths = ["tests"]
 addopts = "-q"
 filterwarnings = ["ignore::DeprecationWarning"]
+markers = ["slow: reale Trainingsläufe, nur mit -m slow"]
 
 [tool.ruff]
 line-length = 100
