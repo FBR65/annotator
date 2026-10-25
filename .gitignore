@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+*.db
+*.db-wal
+*.db-shm
+models/
+datasets/
+runs/
+*.pt
+annotator.log
+review_queue.json
