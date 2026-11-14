@@ -69,6 +69,13 @@ Zusätzlich, nicht aus der SPEC, aber gefordert durch den Angriffspass:
 `test_extra.py` (16 Randfälle) und `test_adversarial.py` (5 Fälle: 0-Byte-Datei,
 Attrappe mit `.png`, 4000×3000-Bild, 5 gleichzeitige Schreiber, Box außerhalb).
 
+### RED-Phase
+
+`RED.txt` ist der Protokollauszug des ersten Testlaufs, im Zustand „alle Module
+sind Stubs“ (`raise NotImplementedError`): **84 Fehlschläge**, **299 Stellen** mit
+`NotImplementedError`, **0 grün**. Der Auszug liegt im Repo, damit die Zahl
+nachprüfbar bleibt. Ohne ihn wäre „die Tests waren zuerst rot“ eine Behauptung.
+
 ## 3. GAUNTLET (frischer Lauf nach der letzten Änderung)
 
 | Ebene | Befehl | Ergebnis |
