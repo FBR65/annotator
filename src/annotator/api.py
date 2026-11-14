@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from . import __version__
 from .db import BoxRow, ImageRow, Store
 from .exporter import export_dataset
 from .geometry import Box, BoxError
@@ -82,7 +83,7 @@ def _image_dict(store: Store, image: ImageRow) -> dict[str, object]:
 
 
 def create_app(store: Store, log_path: Path) -> FastAPI:
-    app = FastAPI(title="Annotator", version="0.1.0")
+    app = FastAPI(title="Annotator", version=__version__)
     log_file = Path(log_path)
 
     def log(event: str, image_id: int | None = None, **detail: object) -> None:

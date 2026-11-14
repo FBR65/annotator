@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 
@@ -170,4 +169,3 @@ def test_export_only_uses_database(store: Store, tmp_path: Path) -> None:
     names = {Path(f).name for f in result.files}
     assert orphan.name not in names
     assert len(names) == 3
-    assert hashlib.sha256(b"x").hexdigest()

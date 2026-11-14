@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from annotator.db import Store
-from annotator.geometry import Box, BoxError
+from annotator.geometry import BoxError
 from annotator.importer import (
     import_folder,
     import_labels,
@@ -90,4 +90,3 @@ def test_import_labels_creates_boxes_and_logs_rejects(tmp_path: Path, store: Sto
     boxes = store.boxes(image_id)
     assert len(boxes) == 1
     assert (boxes[0].cx, boxes[0].cy) == pytest.approx((0.5, 0.5))
-    assert isinstance(Box(0, 0.5, 0.5, 0.2, 0.2), Box)

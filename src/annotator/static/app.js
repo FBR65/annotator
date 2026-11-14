@@ -154,10 +154,6 @@ async function ladeBild(id) {
   });
 }
 
-function skalierung() {
-  return buehne.width / buehne.clientWidth || 1;
-}
-
 function mausPunkt(ereignis) {
   const rechteck = buehne.getBoundingClientRect();
   const faktor = buehne.width / rechteck.width;

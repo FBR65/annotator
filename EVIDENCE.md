@@ -218,3 +218,56 @@ die SPEC-Angabe ist damit überholt und nicht umgesetzt.
 
 Unverändert offen: `__main__.py` (5 Zeilen, kein Test), der echte ultralytics-Aufruf
 außerhalb des `slow`-Tests, `app.js` ohne automatisierten Test.
+
+---
+
+## 10. Aufräumen der Codebasis
+
+Ziel: toter Code, Prüf-Artefakte und irreführende Tests entfernen. Verhalten
+unverändert.
+
+### Werkzeuge für die Bestandsaufnahme
+
+| Prüfung | Ergebnis |
+|---|---|
+| `uvx vulture src tools --min-confidence 80` | keine Funde |
+| `uvx vulture --min-confidence 60` | nur Falschmeldungen: FastAPI-Routen (über Dekorator registriert), `ImageRow.updated_at`, `conn.row_factory` |
+| JS: jede Funktion gegen ihre Aufrufe gezählt | `skalierung()` ohne Aufruf |
+| CSS: jede Klasse gegen HTML und JS geprüft | alle in Gebrauch |
+
+### Entfernt
+
+| Fund | Art | Begründung |
+|---|---|---|
+| `skalierung()` in `app.js` | tote Funktion | nirgends aufgerufen, Rest der ersten Fassung |
+| `_box_of()` in `exporter.py` | Umweg ohne Nutzen | hob Felder über fünf `# type: ignore` aus `BoxRow`; jetzt direkte Feldzugriffe |
+| `"0.1.0"` in `api.py` | doppelte Konstante | nutzt jetzt `__version__` aus `__init__.py` |
+| `test_math_constants_sane` | leerer Test | prüfte `math.isfinite(0.5)`; hinzugefügt nur für Abdeckung, also Gaming |
+| `assert isinstance(Box(...), Box)` in `test_importer.py` | leerer Test | prüfte den Konstruktor gegen sich selbst |
+| `assert hashlib.sha256(b"x").hexdigest()` in `test_exporter.py` | leerer Test | prüfte die Standardbibliothek, nicht den Code |
+| `annotator.log` im Projektstamm | Artefakt | Rest eines abgebrochenen `serve`-Laufs, gehört ins Arbeitsverzeichnis |
+| `yolov8n.pt` im Projektstamm | Artefakt | 6,5 MB Download; liegt jetzt in `models/`, Projektstamm enthält nur Projektdateien |
+| `.hypothesis/` | fehlte in `.gitignore` | Beispiel-Cache von Hypothesis |
+
+Drei leere Tests zu entfernen senkt die Testzahl von 112 auf 111. Das ist keine
+verschlechterte Prüfung: Die Tests haben nichts geprüft (Anti-Gaming-Regel 4).
+
+### Nachweis nach dem Aufräumen (frischer Lauf)
+
+| Ebene | Ergebnis |
+|---|---|
+| Tests | **111 passed**, 1 deselected |
+| GPU-Test | 1 passed in 10,32 s |
+| Reihenfolge-Zufall | 3/3 grün |
+| mypy strict / ruff / format | 0 Fehler / sauber / formatiert |
+| Abdeckung | **90 %** (95 von 999 Zeilen offen) |
+| Mutation | **7/7 getötet** |
+| Oberfläche | Seite geladen, 12 Bilder, 1 Klasse, Bild geöffnet, keine JS-Fehler (`window.onerror` leer) |
+| Quellzeilen | 2394 über `src/annotator/**` |
+
+### Nicht angefasst
+
+`demo/` (1,2 MB) und `models/` (55 MB, inkl. `run_4`) enthalten den einzigen
+echten Ende-zu-Ende-Nachweis und die Zahlen aus Abschnitt 4. Beide sind in
+`.gitignore`, gehören also nicht zum Repo. Löschen würde die Nachweise vernichten,
+nicht die Codebasis bereinigen. Auf Wunsch entferne ich sie mit einem Befehl.

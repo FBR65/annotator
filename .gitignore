@@ -17,3 +17,4 @@ annotator.log
 review_queue.json
 demo/
 RED.txt
+.hypothesis/

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 from pathlib import Path
 
 import pytest
@@ -134,7 +133,3 @@ def test_cli_export_without_images(tmp_path: Path, capsys: pytest.CaptureFixture
     code = main(["--db", str(db), "export", "--out", str(tmp_path / "ds")])
     assert code == 1
     assert "Fehler" in capsys.readouterr().out
-
-
-def test_math_constants_sane() -> None:
-    assert math.isfinite(0.5)

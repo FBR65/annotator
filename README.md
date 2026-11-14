@@ -226,6 +226,6 @@ queue.
 ## Contract and evidence
 
 - `SPEC.md` — approved specification with acceptance criteria A1–G4.
-- `EVIDENCE.md` — verification report: 112 tests, one real GPU training run,
+- `EVIDENCE.md` — verification report: 111 tests, one real GPU training run,
   7/7 hand-written mutants killed, 90 % line coverage, end-to-end run on synthetic
   images.

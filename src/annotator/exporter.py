@@ -58,30 +58,18 @@ def _write_yolo_part(store: Store, out: Path, part: str, images: list[ImageRow])
         target = images_dir / source.name
         shutil.copy2(source, target)
         lines: list[str] = []
-        for box in store.boxes(image.id):
-            candidate = _box_of(box)
-            validate_box(candidate, str(source))
-            index = class_ids.index(candidate.class_id) if candidate.class_id in class_ids else -1
-            if index < 0:
-                raise ValueError(f"Klasse {candidate.class_id} fehlt in der Klassenliste: {source}")
-            lines.append(
-                to_yolo_line(Box(index, candidate.cx, candidate.cy, candidate.w, candidate.h))
-            )
+        for row in store.boxes(image.id):
+            box = Box(row.class_id, row.cx, row.cy, row.w, row.h)
+            validate_box(box, str(source))
+            if row.class_id not in class_ids:
+                raise ValueError(f"Klasse {row.class_id} fehlt in der Klassenliste: {source}")
+            index = class_ids.index(row.class_id)
+            lines.append(to_yolo_line(Box(index, box.cx, box.cy, box.w, box.h)))
         (labels_dir / f"{source.stem}.txt").write_text(
             "\n".join(lines) + ("\n" if lines else ""), encoding="utf-8"
         )
         written.append(target.name)
     return written
-
-
-def _box_of(box: object) -> Box:
-    return Box(
-        class_id=box.class_id,  # type: ignore[attr-defined]
-        cx=box.cx,  # type: ignore[attr-defined]
-        cy=box.cy,  # type: ignore[attr-defined]
-        w=box.w,  # type: ignore[attr-defined]
-        h=box.h,  # type: ignore[attr-defined]
-    )
 
 
 def _write_yolo_yaml(store: Store, out: Path) -> None:
